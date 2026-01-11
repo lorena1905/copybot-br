@@ -74,7 +74,9 @@ def button_handler(update: Update, context: CallbackContext):
     query.edit_message_text(text)
 
 def main():
-    updater = Updater("SEU_TOKEN_AQUI", use_context=True)
+    import os
+    updater = Updater(os.getenv("BOT_TOKEN"), use_context=True)
+
     dp = updater.dispatcher
 
     dp.add_handler(CommandHandler("start", start))
