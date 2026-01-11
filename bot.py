@@ -1,26 +1,26 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
-    ApplicationBuilder,
+    Updater,
     CommandHandler,
     MessageHandler,
     CallbackQueryHandler,
-    ContextTypes,
-    filters
+    Filters,
+    CallbackContext
 )
 
-# Guarda temporariamente o último link enviado por usuário
+# Guarda o último link enviado por cada usuário
 user_links = {}
 
-# Comando /start
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Oi 👋\n\n"
+# /start
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text(
+        "Oi 👋🤖\n\n"
         "Me envie o link de um produto (Shopee, Mercado Livre, etc)\n"
-        "e eu crio um anúncio pra você 🤖🔥"
+        "e eu crio um anúncio prontinho pra você 🔥"
     )
 
 # Recebe o link
-async def receive_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def receive_link(update: Update, context: CallbackContext):
     link = update.message.text.strip()
     user_id = update.message.from_user.id
 
@@ -32,15 +32,17 @@ async def receive_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("✨ Anúncio Normal", callback_data="normal")]
     ]
 
-    await update.message.reply_text(
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    update.message.reply_text(
         "Escolha o tipo de anúncio 👇",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        reply_markup=reply_markup
     )
 
-# Clique nos botões
-async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# Trata clique nos botões
+def button_handler(update: Update, context: CallbackContext):
     query = update.callback_query
-    await query.answer()
+    query.answer()
 
     user_id = query.from_user.id
     link = user_links.get(user_id, "link não encontrado")
@@ -69,17 +71,18 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "*Valor sujeito a alteração sem aviso prévio.*"
         )
 
-    await query.edit_message_text(text)
+    query.edit_message_text(text)
 
 def main():
-    app = ApplicationBuilder().token("SEU_TOKEN_AQUI").build()
+    updater = Updater("SEU_TOKEN_AQUI", use_context=True)
+    dp = updater.dispatcher
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, receive_link))
-    app.add_handler(CallbackQueryHandler(handle_buttons))
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, receive_link))
+    dp.add_handler(CallbackQueryHandler(button_handler))
 
-    print("🤖 CopyBot BR rodando...")
-    app.run_polling()
+    updater.start_polling()
+    updater.idle()
 
 if __name__ == "__main__":
     main()
