@@ -1,43 +1,55 @@
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
-
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import os
 
-TOKEN = os.environ.get("BOT_TOKEN")
+TOKEN = os.getenv("BOT_TOKEN")
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Olá! 🤖\n\n"
+def start(update, context):
+    update.message.reply_text(
+        "Oi! 👋\n"
         "Me envie no formato:\n"
-        "Produto | Preço | Link\n\n"
-        "Que eu crio o anúncio pra você 🔥"
+        "Produto | Preço | Link"
     )
 
-async def gerar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def gerar_copy(update, context):
     texto = update.message.text
 
     if "|" not in texto:
+        update.message.reply_text(
+            "Formato inválido ❌\n"
+            "Use: Produto | Preço | Link"
+        )
         return
 
-    partes = texto.split("|")
+    partes = [p.strip() for p in texto.split("|")]
+
     if len(partes) < 3:
-        await update.message.reply_text("Use: Produto | Preço | Link")
+        update.message.reply_text(
+            "Formato incompleto ❌\n"
+            "Use: Produto | Preço | Link"
+        )
         return
 
-    produto = partes[0].strip()
-    preco = partes[1].strip()
-    link = partes[2].strip()
+    produto, preco, link = partes
 
-    resposta = (
-        "🔥 OFERTA IMPERDÍVEL 🔥\n\n"
+    copy = (
+        f"🔥 OFERTA IMPERDÍVEL 🔥\n\n"
         f"🛍️ {produto}\n"
         f"💰 Apenas {preco}\n\n"
-        f"👉 Compre aqui:\n{link}"
+        f"👉 Compre agora:\n{link}\n\n"
+        f"⚠️ Corre que pode acabar!"
     )
 
-    await update.message.reply_text(resposta)
+    update.message.reply_text(copy)
 
-app = ApplicationBuilder().token(TOKEN).build()
-app.add_handler(CommandHandler("start", start))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, gerar))
-app.run_polling()
+def main():
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
+
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, gerar_copy))
+
+    updater.start_polling()
+    updater.idle()
+
+if __name__ == "__main__":
+    main()
